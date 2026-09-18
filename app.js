@@ -13,81 +13,100 @@ const phaseChecklists = {
     ["germ-climate", "Medir temperatura e umidade", "Salve a leitura junto com o horário."],
     ["germ-environment", "Observar o ambiente", "Registre qualquer mudança visível sem alterar a rotina automaticamente."],
     ["germ-equipment", "Conferir equipamentos e timer", "Confirme que tudo segue ligado e seguro."],
-    ["germ-photo", "Fazer o registro fotográfico", "Fotografe do mesmo ângulo para facilitar comparações."],
+    ["germ-review", "Revisar o registro do dia", "Confirme que horário, medições e observações foram salvos."],
   ],
   "Muda": [
     ["seed-climate", "Medir temperatura e umidade", "Registre os valores e o horário."],
     ["seed-look", "Observar aparência geral", "Anote cor, postura e qualquer mudança percebida."],
     ["seed-equipment", "Conferir ventilação e equipamentos", "Verifique funcionamento e ruídos fora do normal."],
     ["seed-record", "Atualizar o registro diário", "Preencha medições e observações sem deixar campos importantes para depois."],
-    ["seed-photo", "Adicionar a foto do dia", "Use enquadramento e distância semelhantes aos dias anteriores."],
+    ["seed-review", "Revisar o registro do dia", "Confirme que medições e observações foram salvas."],
   ],
   "Vegetativo": [
     ["veg-climate", "Medir temperatura e umidade", "Compare somente com as faixas que você cadastrou."],
     ["veg-light", "Registrar a leitura de luz", "Anote o valor e mantenha o ponto de medição consistente."],
     ["veg-look", "Fazer inspeção visual", "Registre alterações de cor, formato ou postura."],
     ["veg-equipment", "Conferir exaustão e circulação", "Verifique funcionamento e segurança."],
-    ["veg-photo", "Adicionar a foto do dia", "Mantenha o mesmo ângulo sempre que possível."],
+    ["veg-review", "Comparar com o dia anterior", "Observe a evolução das medições e das anotações."],
   ],
   "Início da floração": [
     ["flower-start-climate", "Medir temperatura e umidade", "Registre os valores e o horário."],
     ["flower-start-transition", "Registrar sinais da transição", "Descreva apenas o que consegue observar visualmente."],
     ["flower-start-equipment", "Conferir equipamentos", "Verifique iluminação, timer, exaustão e circulação."],
     ["flower-start-notes", "Atualizar as observações", "Anote qualquer mudança percebida desde o último registro."],
-    ["flower-start-photo", "Adicionar a foto do dia", "Inclua uma visão geral e mantenha o enquadramento."],
+    ["flower-start-review", "Revisar o registro do dia", "Confirme que nenhuma ocorrência ficou sem anotação."],
   ],
   "Meio da floração": [
     ["flower-mid-climate", "Medir temperatura e umidade", "Registre valores e horário."],
     ["flower-mid-look", "Fazer inspeção visual", "Anote mudanças relevantes sem depender apenas da memória."],
     ["flower-mid-equipment", "Conferir o ambiente", "Verifique equipamentos, circulação e sinais de umidade acumulada."],
     ["flower-mid-record", "Atualizar o histórico", "Preencha as medições disponíveis."],
-    ["flower-mid-photo", "Adicionar a foto do dia", "Use o mesmo ângulo das fotos anteriores."],
+    ["flower-mid-review", "Comparar com os últimos dias", "Observe a evolução das medições registradas."],
   ],
   "Finalização": [
     ["finish-climate", "Medir temperatura e umidade", "Registre os valores e o horário."],
     ["finish-look", "Documentar a aparência", "Anote sinais visuais e mudanças desde a última observação."],
     ["finish-equipment", "Conferir equipamentos", "Observe o funcionamento geral e a segurança elétrica."],
     ["finish-history", "Revisar os últimos registros", "Compare os dados sem alterar a rotina automaticamente."],
-    ["finish-photo", "Adicionar uma foto detalhada", "Registre a visão geral e os detalhes que deseja acompanhar."],
+    ["finish-summary", "Completar o resumo do dia", "Registre as mudanças e ocorrências percebidas."],
   ],
   "Colheita": [
     ["harvest-date", "Registrar data e horário", "Marque o início desta fase no histórico."],
     ["harvest-climate", "Medir o ambiente", "Registre temperatura e umidade."],
     ["harvest-equipment", "Conferir segurança e equipamentos", "Verifique organização, energia e circulação de ar."],
     ["harvest-notes", "Anotar observações", "Documente o estado visual e qualquer ocorrência."],
-    ["harvest-photo", "Fazer o registro fotográfico", "Salve uma foto geral antes de avançar."],
+    ["harvest-review", "Revisar o histórico", "Confirme que data, horário e observações foram registrados."],
   ],
   "Secagem e trim": [
     ["dry-climate", "Medir temperatura e umidade", "Registre os valores sempre no mesmo horário."],
     ["dry-air", "Conferir circulação e exaustão", "Observe funcionamento e ruídos anormais."],
     ["dry-dark", "Conferir o ambiente", "Registre qualquer alteração de luz, odor ou umidade percebida."],
     ["dry-notes", "Atualizar o diário", "Descreva a evolução observada."],
-    ["dry-photo", "Adicionar foto de acompanhamento", "Use o mesmo enquadramento para comparar os dias."],
+    ["dry-review", "Comparar com o dia anterior", "Observe e registre a evolução percebida."],
   ],
   "Cura": [
     ["cure-climate", "Medir temperatura e umidade", "Registre os valores e o horário."],
     ["cure-container", "Inspecionar os recipientes", "Observe vedação, limpeza e qualquer alteração visível."],
     ["cure-record", "Atualizar o histórico", "Anote as verificações feitas hoje."],
     ["cure-review", "Revisar os dados recentes", "Compare com os registros anteriores."],
-    ["cure-photo", "Adicionar foto de acompanhamento", "Mantenha iluminação e distância semelhantes."],
+    ["cure-summary", "Completar o resumo do dia", "Confirme que as verificações foram registradas."],
   ],
 };
 
-const PHOTO_DB_NAME = "indoorGrowTrackerPhotos";
-const PHOTO_STORE = "photos";
-let photos = [];
-let photoUrls = [];
-let viewerUrl = "";
+const phaseTimeline = [
+  { from: 1, to: 4, phase: "Germinação" },
+  { from: 5, to: 19, phase: "Muda" },
+  { from: 20, to: 34, phase: "Vegetativo" },
+  { from: 35, to: 42, phase: "Início da floração" },
+  { from: 43, to: 56, phase: "Meio da floração" },
+  { from: 57, to: 70, phase: "Finalização" },
+  { from: 71, to: 77, phase: "Colheita" },
+  { from: 78, to: 91, phase: "Secagem e trim" },
+  { from: 92, to: Infinity, phase: "Cura" },
+];
+
+const phaseGuidance = {
+  "Preparação": "Defina a data inicial e confirme que o ambiente e os instrumentos estão prontos para registrar dados.",
+  "Germinação": "Acompanhe o início da linha do tempo, registre o ambiente e documente mudanças visíveis.",
+  "Muda": "Observe a aparência geral e mantenha medições consistentes no mesmo local e horário.",
+  "Vegetativo": "Priorize consistência nos registros ambientais, inspeção visual e funcionamento dos equipamentos.",
+  "Início da floração": "Registre sinais visuais da transição e acompanhe cuidadosamente o ambiente.",
+  "Meio da floração": "Mantenha o histórico diário completo e observe mudanças sem depender apenas da memória.",
+  "Finalização": "Compare os registros recentes e documente a evolução visual e ambiental.",
+  "Colheita": "Marque a data, registre o ambiente e documente o estado geral desta etapa.",
+  "Secagem e trim": "Acompanhe o ambiente em horários consistentes e registre qualquer mudança percebida.",
+  "Cura": "Mantenha o histórico de verificações, ambiente e observações visuais.",
+};
 
 const defaultState = {
-  version: 2,
+  version: 3,
   settings: {
     phase: "Preparação",
     startDate: "",
-    targets: { tempMin: "", tempMax: "", humidityMin: "", humidityMax: "" },
   },
   logs: {},
   checks: {},
+  materials: [],
 };
 
 let state = loadState();
@@ -110,9 +129,10 @@ function loadState() {
     return saved ? {
       ...structuredClone(defaultState),
       ...saved,
-      settings: { ...defaultState.settings, ...(saved.settings || {}), targets: { ...defaultState.settings.targets, ...(saved.settings?.targets || {}) } },
+      settings: { ...defaultState.settings, ...(saved.settings || {}) },
       logs: saved.logs || {},
       checks: saved.checks || {},
+      materials: saved.materials || [],
     } : structuredClone(defaultState);
   } catch {
     return structuredClone(defaultState);
@@ -130,16 +150,38 @@ function formatDate(dateOrKey, options = {}) {
 
 function renderHeader() {
   const now = new Date();
+  const day = getDayNumber();
+  const phase = getAutomaticPhase(day);
   $("#today-title").textContent = formatDate(now, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  $("#current-phase").textContent = state.settings.phase || "Não definida";
-  if (state.settings.startDate) {
-    const start = new Date(`${state.settings.startDate}T12:00:00`);
-    const today = new Date(`${localDateKey(now)}T12:00:00`);
-    const diff = Math.floor((today - start) / 86400000) + 1;
-    $("#day-count").textContent = diff > 0 ? `Dia ${diff}` : "Preparação";
-  } else {
-    $("#day-count").textContent = "Preparação";
-  }
+  $("#current-phase").textContent = phase;
+  $("#day-count").textContent = day > 0 ? `Dia ${day}` : "Preparação";
+}
+
+function getDayNumber() {
+  if (!state.settings.startDate) return 0;
+  const start = new Date(`${state.settings.startDate}T12:00:00`);
+  const today = new Date(`${localDateKey(new Date())}T12:00:00`);
+  return Math.floor((today - start) / 86400000) + 1;
+}
+
+function getAutomaticPhase(day) {
+  if (day < 1) return "Preparação";
+  return phaseTimeline.find((item) => day >= item.from && day <= item.to)?.phase || "Cura";
+}
+
+function renderDailyPlan() {
+  const day = getDayNumber();
+  const phase = getAutomaticPhase(day);
+  $("#plan-day").textContent = day > 0 ? `Dia ${day}` : "Antes do início";
+  $("#plan-phase").textContent = phase;
+  $("#plan-expectation").textContent = phaseGuidance[phase];
+  const measures = [
+    "Registrar temperatura e umidade com data e horário.",
+    "Confirmar o funcionamento da exaustão, circulação e timer.",
+    "Anotar alterações visuais ou ocorrências no registro diário.",
+    "Comparar os dados com os registros anteriores e com documentação confiável.",
+  ];
+  $("#plan-measures").innerHTML = measures.map((item) => `<li>${item}</li>`).join("");
 }
 
 function latestLog() {
@@ -152,24 +194,14 @@ function numberOrDash(value) {
 
 function interpret(log) {
   if (!log) return { label: "Sem dados", className: "", text: "Registre as primeiras medições para iniciar o histórico." };
-  const t = state.settings.targets;
   const notes = [];
-  const compare = (value, min, max, name) => {
-    if (value === "" || value == null) return;
-    const n = Number(value);
-    if (min !== "" && n < Number(min)) notes.push(`${name} abaixo da faixa definida`);
-    if (max !== "" && n > Number(max)) notes.push(`${name} acima da faixa definida`);
-  };
-  compare(log.temperature, t.tempMin, t.tempMax, "Temperatura");
-  compare(log.humidity, t.humidityMin, t.humidityMax, "Umidade");
   if (!log.exhaustion) notes.push("exaustão não confirmada");
   if (!log.circulation) notes.push("circulação não confirmada");
   if (notes.length) return { label: "Revisar", className: "is-attention", text: `${notes.join("; ")}.` };
-  const hasTargets = Object.values(t).some((value) => value !== "");
   return {
-    label: hasTargets ? "Dentro da faixa" : "Registrado",
+    label: "Registrado",
     className: "is-good",
-    text: hasTargets ? "Os valores informados estão dentro das faixas que você definiu." : "Registro salvo. Defina faixas em Ajustes para ativar a comparação automática.",
+    text: "Registro ambiental salvo. Compare a evolução com os dias anteriores.",
   };
 }
 
@@ -188,7 +220,8 @@ function renderMetrics() {
 function renderChecklist() {
   const key = localDateKey(new Date());
   const checked = state.checks[key] || {};
-  const phase = phaseChecklists[state.settings.phase] ? state.settings.phase : "Preparação";
+  const automaticPhase = getAutomaticPhase(getDayNumber());
+  const phase = phaseChecklists[automaticPhase] ? automaticPhase : "Preparação";
   const checklistItems = phaseChecklists[phase].map(([id, title, detail]) => ({ id, title, detail }));
   $("#checklist-title").textContent = `Checklist · ${phase}`;
   $("#checklist").innerHTML = checklistItems.map((item) => `
@@ -206,121 +239,12 @@ function renderChecklist() {
   updateProgress(checklistItems);
 }
 
-function updateProgress(items = phaseChecklists[state.settings.phase] || phaseChecklists["Preparação"]) {
+function updateProgress(items = phaseChecklists[getAutomaticPhase(getDayNumber())] || phaseChecklists["Preparação"]) {
   const key = localDateKey(new Date());
   const ids = items.map((item) => Array.isArray(item) ? item[0] : item.id);
   const count = ids.filter((id) => state.checks[key]?.[id]).length;
   $("#check-progress").textContent = `${count}/${ids.length}`;
   $("#check-progress-bar").style.width = `${(count / ids.length) * 100}%`;
-}
-
-function openPhotoDatabase() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(PHOTO_DB_NAME, 1);
-    request.onupgradeneeded = () => {
-      const database = request.result;
-      if (!database.objectStoreNames.contains(PHOTO_STORE)) {
-        database.createObjectStore(PHOTO_STORE, { keyPath: "id" });
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-async function getPhotos() {
-  const database = await openPhotoDatabase();
-  return new Promise((resolve, reject) => {
-    const request = database.transaction(PHOTO_STORE, "readonly").objectStore(PHOTO_STORE).getAll();
-    request.onsuccess = () => {
-      const result = request.result.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-      database.close();
-      resolve(result);
-    };
-    request.onerror = () => reject(request.error);
-  });
-}
-
-async function storePhoto(photo) {
-  const database = await openPhotoDatabase();
-  return new Promise((resolve, reject) => {
-    const transaction = database.transaction(PHOTO_STORE, "readwrite");
-    transaction.objectStore(PHOTO_STORE).put(photo);
-    transaction.oncomplete = () => { database.close(); resolve(); };
-    transaction.onerror = () => reject(transaction.error);
-  });
-}
-
-function compressPhoto(file) {
-  return new Promise((resolve, reject) => {
-    const objectUrl = URL.createObjectURL(file);
-    const image = new Image();
-    image.onload = () => {
-      const maxSide = 1600;
-      const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(image.naturalWidth * scale);
-      canvas.height = Math.round(image.naturalHeight * scale);
-      const context = canvas.getContext("2d");
-      context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob((blob) => {
-        URL.revokeObjectURL(objectUrl);
-        blob ? resolve(blob) : reject(new Error("Falha ao processar a imagem"));
-      }, "image/jpeg", .82);
-    };
-    image.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Imagem inválida")); };
-    image.src = objectUrl;
-  });
-}
-
-function clearPhotoUrls() {
-  photoUrls.forEach((url) => URL.revokeObjectURL(url));
-  photoUrls = [];
-}
-
-function photoDateLabel(photo) {
-  return `${formatDate(photo.date, { day: "2-digit", month: "2-digit", year: "numeric" })} · ${photo.time}`;
-}
-
-async function renderPhotos() {
-  try {
-    photos = await getPhotos();
-  } catch {
-    photos = [];
-  }
-  clearPhotoUrls();
-  const empty = $("#photo-empty");
-  const main = $("#photo-main");
-  const thumbnails = $("#photo-thumbnails");
-  if (!photos.length) {
-    empty.hidden = false;
-    main.hidden = true;
-    thumbnails.innerHTML = "";
-    return;
-  }
-  empty.hidden = true;
-  main.hidden = false;
-  const mainUrl = URL.createObjectURL(photos[0].blob);
-  photoUrls.push(mainUrl);
-  $("#photo-main-image").src = mainUrl;
-  $("#photo-main-meta").textContent = photoDateLabel(photos[0]);
-  main.dataset.photoId = photos[0].id;
-  thumbnails.innerHTML = photos.slice(0, 12).map((photo, index) => {
-    const url = URL.createObjectURL(photo.blob);
-    photoUrls.push(url);
-    return `<button class="photo-thumb" type="button" data-photo-id="${photo.id}" aria-label="Ampliar foto de ${photoDateLabel(photo)}"><img src="${url}" alt="Miniatura ${index + 1}" /></button>`;
-  }).join("");
-  $$("[data-photo-id]", thumbnails).forEach((button) => button.addEventListener("click", () => openPhotoViewer(button.dataset.photoId)));
-}
-
-function openPhotoViewer(id) {
-  const photo = photos.find((item) => item.id === id);
-  if (!photo) return;
-  if (viewerUrl) URL.revokeObjectURL(viewerUrl);
-  viewerUrl = URL.createObjectURL(photo.blob);
-  $("#photo-viewer-image").src = viewerUrl;
-  $("#photo-viewer-meta").textContent = `${photoDateLabel(photo)} · ${photo.phase}`;
-  $("#photo-viewer").showModal();
 }
 
 function renderCalendar() {
@@ -388,9 +312,37 @@ function renderHistory() {
 
 function renderSettings() {
   const form = $("#settings-form");
-  form.phase.value = state.settings.phase || "";
   form.startDate.value = state.settings.startDate || "";
-  Object.entries(state.settings.targets).forEach(([key, value]) => { form[key].value = value; });
+}
+
+function renderMaterials() {
+  const list = $("#materials-list");
+  const total = state.materials.length;
+  const done = state.materials.filter((item) => item.done).length;
+  $("#material-progress").textContent = `${done}/${total}`;
+  $("#material-progress-bar").style.width = total ? `${(done / total) * 100}%` : "0%";
+  if (!total) {
+    list.innerHTML = '<div class="empty-state">Nenhum material cadastrado.</div>';
+    return;
+  }
+  list.innerHTML = state.materials.map((item) => `
+    <div class="material-row ${item.done ? "is-done" : ""}">
+      <input class="material-check" type="checkbox" data-material-check="${item.id}" ${item.done ? "checked" : ""} aria-label="Marcar ${escapeHtml(item.name)} como concluído" />
+      <span class="material-name">${escapeHtml(item.name)}</span>
+      <button class="material-delete" type="button" data-material-delete="${item.id}" aria-label="Excluir ${escapeHtml(item.name)}">×</button>
+    </div>
+  `).join("");
+  $$('[data-material-check]').forEach((input) => input.addEventListener('change', () => {
+    const item = state.materials.find((entry) => entry.id === input.dataset.materialCheck);
+    if (item) item.done = input.checked;
+    saveState();
+    renderMaterials();
+  }));
+  $$('[data-material-delete]').forEach((button) => button.addEventListener('click', () => {
+    state.materials = state.materials.filter((entry) => entry.id !== button.dataset.materialDelete);
+    saveState();
+    renderMaterials();
+  }));
 }
 
 function switchView(target) {
@@ -402,6 +354,7 @@ function switchView(target) {
   $$(".nav-item").forEach((button) => button.classList.toggle("is-active", button.dataset.target === target));
   if (target === "calendar") { renderCalendar(); renderSelectedDay(); }
   if (target === "history") renderHistory();
+  if (target === "materials") renderMaterials();
   if (target === "settings") renderSettings();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -458,9 +411,10 @@ function importData(file) {
       state = {
         ...structuredClone(defaultState),
         ...parsed,
-        settings: { ...defaultState.settings, ...(parsed.settings || {}), targets: { ...defaultState.settings.targets, ...(parsed.settings?.targets || {}) } },
+        settings: { ...defaultState.settings, ...(parsed.settings || {}) },
         logs: parsed.logs || {},
-        checks: parsed.checks || {},
+      checks: parsed.checks || {},
+      materials: parsed.materials || [],
       };
       saveState();
       renderAll();
@@ -489,48 +443,17 @@ function showToast(message) {
 
 function renderAll() {
   renderHeader();
+  renderDailyPlan();
   renderMetrics();
   renderChecklist();
   renderCalendar();
   renderSelectedDay();
   renderHistory();
   renderSettings();
-  renderPhotos();
+  renderMaterials();
 }
 
 $("#open-entry").addEventListener("click", () => openEntry());
-$("#photo-main").addEventListener("click", (event) => openPhotoViewer(event.currentTarget.dataset.photoId));
-$("#photo-input").addEventListener("change", async (event) => {
-  const [file] = event.target.files;
-  if (!file) return;
-  try {
-    showToast("Preparando a foto…");
-    const blob = await compressPhoto(file);
-    const now = new Date();
-    await storePhoto({
-      id: crypto.randomUUID ? crypto.randomUUID() : `photo-${Date.now()}`,
-      blob,
-      date: localDateKey(now),
-      time: now.toTimeString().slice(0, 5),
-      phase: state.settings.phase,
-      createdAt: now.toISOString(),
-    });
-    await renderPhotos();
-    showToast("Foto salva neste aparelho.");
-  } catch {
-    showToast("Não foi possível salvar essa foto.");
-  }
-  event.target.value = "";
-});
-$("#photo-viewer-close").addEventListener("click", () => $("#photo-viewer").close());
-$("#photo-viewer").addEventListener("click", (event) => {
-  if (event.target === event.currentTarget) event.currentTarget.close();
-});
-$("#photo-viewer").addEventListener("close", () => {
-  if (viewerUrl) URL.revokeObjectURL(viewerUrl);
-  viewerUrl = "";
-  $("#photo-viewer-image").removeAttribute("src");
-});
 $$('.nav-item').forEach((button) => button.addEventListener("click", () => switchView(button.dataset.target)));
 $("#prev-month").addEventListener("click", () => { calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() - 1, 1); renderCalendar(); });
 $("#next-month").addEventListener("click", () => { calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + 1, 1); renderCalendar(); });
@@ -550,15 +473,27 @@ $("#entry-dialog").addEventListener("click", (event) => {
 $("#settings-form").addEventListener("submit", (event) => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
-  state.settings.phase = data.get("phase").trim() || "Não definida";
   state.settings.startDate = data.get("startDate");
-  state.settings.targets = {
-    tempMin: data.get("tempMin"), tempMax: data.get("tempMax"),
-    humidityMin: data.get("humidityMin"), humidityMax: data.get("humidityMax"),
-  };
   saveState();
   renderAll();
   showToast("Ajustes salvos.");
+});
+
+$("#material-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const input = $("#material-input");
+  const name = input.value.trim();
+  if (!name) return;
+  state.materials.unshift({
+    id: crypto.randomUUID ? crypto.randomUUID() : `material-${Date.now()}`,
+    name,
+    done: false,
+    createdAt: new Date().toISOString(),
+  });
+  saveState();
+  input.value = "";
+  renderMaterials();
+  showToast("Material adicionado.");
 });
 
 $("#export-data").addEventListener("click", exportData);

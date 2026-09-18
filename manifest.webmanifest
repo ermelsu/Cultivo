@@ -1,0 +1,9 @@
+{
+  "name": "Indoor Grow Tracker",
+  "short_name": "Grow Tracker",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#08100c",
+  "theme_color": "#0b1410",
+  "lang": "pt-BR"
+}

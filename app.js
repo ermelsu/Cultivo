@@ -1,271 +1,354 @@
-
-const KEY = "indoorGrowTracker.v1";
-
-const defaultState = {
-  targets: { tempMin:"", tempMax:"", rhMin:"", rhMax:"" },
-  phases: [
-    { id: crypto.randomUUID(), name:"Preparação", start: todayISO(), end: todayISO(), notes:"Ambiente, equipamentos, segurança e medições." },
-    { id: crypto.randomUUID(), name:"Fase inicial", start: addDays(todayISO(),1), end:addDays(todayISO(),7), notes:"Fase genérica configurável." },
-    { id: crypto.randomUUID(), name:"Crescimento", start:addDays(todayISO(),8), end:addDays(todayISO(),28), notes:"Fase genérica configurável." },
-    { id: crypto.randomUUID(), name:"Fase reprodutiva", start:addDays(todayISO(),29), end:addDays(todayISO(),63), notes:"Fase genérica configurável." },
-    { id: crypto.randomUUID(), name:"Pós-colheita", start:addDays(todayISO(),64), end:addDays(todayISO(),77), notes:"Fase genérica configurável." }
-  ],
-  logs: [],
-  prepChecks: {
-    power:false, cables:false, thermometer:false, exhaust:false,
-    circulation:false, timer:false, dryrun:false, notes:false
-  },
-  dark:false
-};
-
-function todayISO(){
-  const d = new Date();
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0,10);
-}
-function addDays(iso, n){
-  const d = new Date(iso+"T12:00:00");
-  d.setDate(d.getDate()+n);
-  return d.toISOString().slice(0,10);
-}
-function load(){
-  const raw = localStorage.getItem(KEY);
-  if(!raw) return structuredClone(defaultState);
-  try { return {...structuredClone(defaultState), ...JSON.parse(raw)} }
-  catch { return structuredClone(defaultState); }
-}
-let state = load();
-function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+const STORAGE_KEY = "indoorGrowTrackerData";
 
 const checklistItems = [
-  ["power","Verificar tomadas, extensões e ausência de sobrecarga."],
-  ["cables","Confirmar que cabos e conexões estão secos e bem fixados."],
-  ["thermometer","Testar termo-higrômetro e registrar uma leitura inicial."],
-  ["exhaust","Testar exaustão e verificar se está funcionando sem ruído anormal."],
-  ["circulation","Testar circulação interna de ar."],
-  ["timer","Testar temporizador/automação dos equipamentos."],
-  ["dryrun","Fazer um teste do ambiente vazio por algumas horas."],
-  ["notes","Registrar qualquer aquecimento, ruído, oscilação ou manutenção necessária."]
+  { id: "power", title: "Verificar a parte elétrica", detail: "Tomadas, extensões e equipamentos sem aquecimento anormal." },
+  { id: "cables", title: "Conferir cabos e conexões", detail: "Tudo seco, bem fixado e longe de água." },
+  { id: "climate", title: "Medir temperatura e umidade", detail: "Faça uma leitura e registre o horário." },
+  { id: "exhaust", title: "Testar a exaustão", detail: "Observe fluxo de ar e qualquer ruído fora do normal." },
+  { id: "air", title: "Testar a circulação interna", detail: "Confirme que o equipamento está firme e funcionando." },
 ];
 
-function renderPrep(){
-  const el = document.querySelector("#prepChecklist");
-  el.innerHTML = "";
-  checklistItems.forEach(([id,label])=>{
-    const row = document.createElement("label");
-    row.className = "check-item";
-    row.innerHTML = `<input type="checkbox" ${state.prepChecks[id]?"checked":""}><span>${label}</span>`;
-    row.querySelector("input").addEventListener("change", e=>{
-      state.prepChecks[id] = e.target.checked; save();
-    });
-    el.appendChild(row);
-  });
-}
-
-function activePhase(date=todayISO()){
-  return state.phases
-    .slice()
-    .sort((a,b)=>a.start.localeCompare(b.start))
-    .find(p=>date>=p.start && date<=p.end);
-}
-
-function renderToday(){
-  const d = new Date();
-  document.querySelector("#todayTitle").textContent =
-    d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
-  const p = activePhase();
-  document.querySelector("#todayPhase").textContent = p ? `Fase atual: ${p.name}` : "Nenhuma fase programada para hoje.";
-}
-
-function renderTargets(){
-  tempMinTarget.value = state.targets.tempMin ?? "";
-  tempMaxTarget.value = state.targets.tempMax ?? "";
-  rhMinTarget.value = state.targets.rhMin ?? "";
-  rhMaxTarget.value = state.targets.rhMax ?? "";
-}
-saveTargetsBtn.addEventListener("click", ()=>{
-  state.targets = {
-    tempMin: tempMinTarget.value,
-    tempMax: tempMaxTarget.value,
-    rhMin: rhMinTarget.value,
-    rhMax: rhMaxTarget.value
-  };
-  save();
-  interpretForm();
-});
-
-function renderPhases(){
-  const el = document.querySelector("#phasesList");
-  el.innerHTML = "";
-  state.phases.slice().sort((a,b)=>a.start.localeCompare(b.start)).forEach(p=>{
-    const row = document.createElement("div");
-    row.className = "phase";
-    row.innerHTML = `
-      <div><strong>${escapeHtml(p.name)}</strong><div class="muted small">${escapeHtml(p.notes||"")}</div></div>
-      <div class="dates">${fmt(p.start)} → ${fmt(p.end)}</div>
-      <div class="phase-actions">
-        <button class="secondary edit">Editar</button>
-        <button class="secondary delete">Excluir</button>
-      </div>`;
-    row.querySelector(".edit").addEventListener("click",()=>openPhase(p));
-    row.querySelector(".delete").addEventListener("click",()=>{
-      if(confirm("Excluir esta fase?")){
-        state.phases = state.phases.filter(x=>x.id!==p.id); save(); renderPhases(); renderToday();
-      }
-    });
-    el.appendChild(row);
-  });
-}
-
-function openPhase(p=null){
-  phaseId.value = p?.id || "";
-  phaseName.value = p?.name || "";
-  phaseStart.value = p?.start || todayISO();
-  phaseEnd.value = p?.end || todayISO();
-  phaseNotes.value = p?.notes || "";
-  phaseDialog.showModal();
-}
-addPhaseBtn.addEventListener("click",()=>openPhase());
-
-phaseForm.addEventListener("submit",(e)=>{
-  if(e.submitter?.value==="cancel") return;
-  e.preventDefault();
-  const obj = {
-    id: phaseId.value || crypto.randomUUID(),
-    name: phaseName.value.trim(),
-    start: phaseStart.value,
-    end: phaseEnd.value,
-    notes: phaseNotes.value.trim()
-  };
-  if(obj.end < obj.start){ alert("A data final não pode ser anterior à inicial."); return; }
-  const ix = state.phases.findIndex(x=>x.id===obj.id);
-  if(ix>=0) state.phases[ix]=obj; else state.phases.push(obj);
-  save(); renderPhases(); renderToday(); phaseDialog.close();
-});
-
-function interpretValues(t, rh){
-  const out = [];
-  const tmn = num(state.targets.tempMin), tmx = num(state.targets.tempMax);
-  const rmn = num(state.targets.rhMin), rmx = num(state.targets.rhMax);
-
-  if(t==null && rh==null){
-    out.push(["warn","Registre temperatura e umidade para receber uma leitura automática."]);
-    return out;
-  }
-  if(t!=null && tmn!=null && t<tmn) out.push(["warn",`Temperatura abaixo da faixa definida (${tmn}–${tmx ?? "?"} °C).`]);
-  if(t!=null && tmx!=null && t>tmx) out.push(["warn",`Temperatura acima da faixa definida (${tmn ?? "?"}–${tmx} °C).`]);
-  if(t!=null && tmn!=null && tmx!=null && t>=tmn && t<=tmx) out.push(["ok","Temperatura dentro da faixa definida por você."]);
-
-  if(rh!=null && rmn!=null && rh<rmn) out.push(["warn",`Umidade abaixo da faixa definida (${rmn}–${rmx ?? "?"}%).`]);
-  if(rh!=null && rmx!=null && rh>rmx) out.push(["warn",`Umidade acima da faixa definida (${rmn ?? "?"}–${rmx}%).`]);
-  if(rh!=null && rmn!=null && rmx!=null && rh>=rmn && rh<=rmx) out.push(["ok","Umidade dentro da faixa definida por você."]);
-
-  if(out.length===0) out.push(["warn","Defina faixas de referência para o sistema comparar as leituras."]);
-  return out;
-}
-
-function interpretForm(){
-  const msgs = interpretValues(num(temp.value), num(rh.value));
-  interpretation.innerHTML = msgs.map(([type,msg])=>`<div class="msg ${type}">${msg}</div>`).join("");
-}
-temp.addEventListener("input", interpretForm);
-rh.addEventListener("input", interpretForm);
-
-logForm.addEventListener("submit",(e)=>{
-  e.preventDefault();
-  const item = {
-    date: logDate.value,
-    temp: temp.value,
-    rh: rh.value,
-    light: light.value,
-    exhaust: exhaust.value,
-    fan: fan.value,
-    notes: notes.value.trim(),
-    savedAt: new Date().toISOString()
-  };
-  const ix = state.logs.findIndex(x=>x.date===item.date);
-  if(ix>=0 && !confirm("Já existe um registro nesta data. Substituir?")) return;
-  if(ix>=0) state.logs[ix]=item; else state.logs.push(item);
-  save(); renderHistory(); interpretForm();
-});
-
-function renderHistory(){
-  const el = document.querySelector("#history");
-  if(!state.logs.length){
-    el.innerHTML = `<p class="muted">Nenhum registro salvo.</p>`; return;
-  }
-  const rows = state.logs.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(x=>{
-    const p = activePhase(x.date);
-    const messages = interpretValues(num(x.temp),num(x.rh)).map(m=>m[1]).join(" ");
-    return `<tr>
-      <td>${fmt(x.date)}</td>
-      <td>${escapeHtml(p?.name||"—")}</td>
-      <td>${escapeHtml(x.temp||"—")}</td>
-      <td>${escapeHtml(x.rh||"—")}</td>
-      <td>${escapeHtml(x.light||"—")}</td>
-      <td>${escapeHtml(x.exhaust||"—")}</td>
-      <td>${escapeHtml(x.fan||"—")}</td>
-      <td>${escapeHtml(messages)}</td>
-      <td>${escapeHtml(x.notes||"—")}</td>
-      <td><button class="secondary" onclick="removeLog('${x.date}')">Excluir</button></td>
-    </tr>`;
-  }).join("");
-  el.innerHTML = `<table>
-    <thead><tr><th>Data</th><th>Fase</th><th>Temp.</th><th>Umid.</th><th>Luz</th><th>Exaustão</th><th>Ventilação</th><th>Leitura</th><th>Notas</th><th></th></tr></thead>
-    <tbody>${rows}</tbody></table>`;
-}
-window.removeLog = (date)=>{
-  if(confirm("Excluir este registro?")){
-    state.logs = state.logs.filter(x=>x.date!==date); save(); renderHistory();
-  }
+const defaultState = {
+  version: 2,
+  settings: {
+    phase: "Preparação",
+    startDate: "",
+    targets: { tempMin: "", tempMax: "", humidityMin: "", humidityMax: "" },
+  },
+  logs: {},
+  checks: {},
 };
 
-openTodayBtn.addEventListener("click", ()=>{
-  logDate.value = todayISO();
-  document.querySelector("#logForm").scrollIntoView({behavior:"smooth",block:"start"});
-});
-clearFormBtn.addEventListener("click", ()=>{
-  logDate.value=todayISO(); temp.value=""; rh.value=""; light.value="";
-  exhaust.value=""; fan.value=""; notes.value=""; interpretForm();
+let state = loadState();
+let calendarCursor = new Date();
+let selectedDate = localDateKey(new Date());
+
+const $ = (selector, root = document) => root.querySelector(selector);
+const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+
+function localDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function loadState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return saved ? {
+      ...structuredClone(defaultState),
+      ...saved,
+      settings: { ...defaultState.settings, ...(saved.settings || {}), targets: { ...defaultState.settings.targets, ...(saved.settings?.targets || {}) } },
+      logs: saved.logs || {},
+      checks: saved.checks || {},
+    } : structuredClone(defaultState);
+  } catch {
+    return structuredClone(defaultState);
+  }
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function formatDate(dateOrKey, options = {}) {
+  const date = typeof dateOrKey === "string" ? new Date(`${dateOrKey}T12:00:00`) : dateOrKey;
+  return new Intl.DateTimeFormat("pt-BR", options).format(date);
+}
+
+function renderHeader() {
+  const now = new Date();
+  $("#today-title").textContent = formatDate(now, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  $("#current-phase").textContent = state.settings.phase || "Não definida";
+  if (state.settings.startDate) {
+    const start = new Date(`${state.settings.startDate}T12:00:00`);
+    const today = new Date(`${localDateKey(now)}T12:00:00`);
+    const diff = Math.floor((today - start) / 86400000) + 1;
+    $("#day-count").textContent = diff > 0 ? `Dia ${diff}` : "Preparação";
+  } else {
+    $("#day-count").textContent = "Preparação";
+  }
+}
+
+function latestLog() {
+  return Object.values(state.logs).sort((a, b) => `${b.date}T${b.time || "00:00"}`.localeCompare(`${a.date}T${a.time || "00:00"}`))[0];
+}
+
+function numberOrDash(value) {
+  return value === "" || value == null ? "—" : value;
+}
+
+function interpret(log) {
+  if (!log) return { label: "Sem dados", className: "", text: "Registre as primeiras medições para iniciar o histórico." };
+  const t = state.settings.targets;
+  const notes = [];
+  const compare = (value, min, max, name) => {
+    if (value === "" || value == null) return;
+    const n = Number(value);
+    if (min !== "" && n < Number(min)) notes.push(`${name} abaixo da faixa definida`);
+    if (max !== "" && n > Number(max)) notes.push(`${name} acima da faixa definida`);
+  };
+  compare(log.temperature, t.tempMin, t.tempMax, "Temperatura");
+  compare(log.humidity, t.humidityMin, t.humidityMax, "Umidade");
+  if (!log.exhaustion) notes.push("exaustão não confirmada");
+  if (!log.circulation) notes.push("circulação não confirmada");
+  if (notes.length) return { label: "Revisar", className: "is-attention", text: `${notes.join("; ")}.` };
+  const hasTargets = Object.values(t).some((value) => value !== "");
+  return {
+    label: hasTargets ? "Dentro da faixa" : "Registrado",
+    className: "is-good",
+    text: hasTargets ? "Os valores informados estão dentro das faixas que você definiu." : "Registro salvo. Defina faixas em Ajustes para ativar a comparação automática.",
+  };
+}
+
+function renderMetrics() {
+  const log = latestLog();
+  $("#metric-temp").textContent = numberOrDash(log?.temperature);
+  $("#metric-humidity").textContent = numberOrDash(log?.humidity);
+  $("#metric-light").textContent = numberOrDash(log?.light);
+  const result = interpret(log);
+  const status = $("#reading-status");
+  status.textContent = result.label;
+  status.className = `status-pill ${result.className}`.trim();
+  $("#interpretation").textContent = result.text;
+}
+
+function renderChecklist() {
+  const key = localDateKey(new Date());
+  const checked = state.checks[key] || {};
+  $("#checklist").innerHTML = checklistItems.map((item) => `
+    <label class="check-row">
+      <input type="checkbox" data-check="${item.id}" ${checked[item.id] ? "checked" : ""} />
+      <span class="check-copy"><strong>${item.title}</strong><small>${item.detail}</small></span>
+    </label>
+  `).join("");
+  $$("[data-check]").forEach((input) => input.addEventListener("change", () => {
+    state.checks[key] ||= {};
+    state.checks[key][input.dataset.check] = input.checked;
+    saveState();
+    updateProgress();
+  }));
+  updateProgress();
+}
+
+function updateProgress() {
+  const key = localDateKey(new Date());
+  const count = Object.values(state.checks[key] || {}).filter(Boolean).length;
+  $("#check-progress").textContent = `${count}/${checklistItems.length}`;
+  $("#check-progress-bar").style.width = `${(count / checklistItems.length) * 100}%`;
+}
+
+function renderCalendar() {
+  const year = calendarCursor.getFullYear();
+  const month = calendarCursor.getMonth();
+  $("#month-label").textContent = formatDate(calendarCursor, { month: "long", year: "numeric" });
+  const first = new Date(year, month, 1);
+  const gridStart = new Date(year, month, 1 - first.getDay());
+  const today = localDateKey(new Date());
+  const days = [];
+  for (let i = 0; i < 42; i += 1) {
+    const date = new Date(gridStart);
+    date.setDate(gridStart.getDate() + i);
+    const key = localDateKey(date);
+    const classes = ["calendar-day"];
+    if (date.getMonth() !== month) classes.push("other");
+    if (key === today) classes.push("today");
+    if (key === selectedDate) classes.push("selected");
+    if (state.logs[key]) classes.push("has-log");
+    days.push(`<button class="${classes.join(" ")}" type="button" data-date="${key}" aria-label="${formatDate(key, { dateStyle: "full" })}">${date.getDate()}</button>`);
+  }
+  $("#calendar-grid").innerHTML = days.join("");
+  $$("[data-date]").forEach((button) => button.addEventListener("click", () => {
+    selectedDate = button.dataset.date;
+    renderCalendar();
+    renderSelectedDay();
+  }));
+}
+
+function renderSelectedDay() {
+  const log = state.logs[selectedDate];
+  $("#selected-day-title").textContent = formatDate(selectedDate, { weekday: "long", day: "numeric", month: "long" });
+  if (!log) {
+    $("#selected-day-summary").textContent = "Nenhum registro salvo nesta data.";
+    return;
+  }
+  const parts = [];
+  if (log.temperature !== "") parts.push(`${log.temperature} °C`);
+  if (log.humidity !== "") parts.push(`${log.humidity}% de umidade`);
+  if (log.light !== "") parts.push(`${log.light} PPFD`);
+  $("#selected-day-summary").textContent = `${parts.join(" · ") || "Registro sem medições"}${log.notes ? ` — ${log.notes}` : ""}`;
+}
+
+function renderHistory() {
+  const logs = Object.values(state.logs).sort((a, b) => `${b.date}T${b.time || "00:00"}`.localeCompare(`${a.date}T${a.time || "00:00"}`));
+  if (!logs.length) {
+    $("#history-list").innerHTML = '<div class="empty-state">Nenhum registro ainda.<br />Use “Registrar hoje” para começar.</div>';
+    return;
+  }
+  $("#history-list").innerHTML = logs.map((log) => {
+    const metrics = [
+      log.temperature !== "" ? `${log.temperature} °C` : "",
+      log.humidity !== "" ? `${log.humidity}% UR` : "",
+      log.light !== "" ? `${log.light} PPFD` : "",
+      log.ph !== "" ? `pH ${log.ph}` : "",
+      log.ec ? `EC/PPM ${escapeHtml(log.ec)}` : "",
+    ].filter(Boolean);
+    return `<article class="history-item">
+      <header><h3>${formatDate(log.date, { weekday: "short", day: "numeric", month: "short" })}</h3><time>${log.time || "—"}</time></header>
+      <div class="history-metrics">${metrics.map((metric) => `<span>${metric}</span>`).join("") || "<span>Sem medições</span>"}</div>
+      ${log.notes ? `<p>${escapeHtml(log.notes)}</p>` : ""}
+    </article>`;
+  }).join("");
+}
+
+function renderSettings() {
+  const form = $("#settings-form");
+  form.phase.value = state.settings.phase || "";
+  form.startDate.value = state.settings.startDate || "";
+  Object.entries(state.settings.targets).forEach(([key, value]) => { form[key].value = value; });
+}
+
+function switchView(target) {
+  $$(".view").forEach((view) => {
+    const active = view.dataset.view === target;
+    view.hidden = !active;
+    view.classList.toggle("is-active", active);
+  });
+  $$(".nav-item").forEach((button) => button.classList.toggle("is-active", button.dataset.target === target));
+  if (target === "calendar") { renderCalendar(); renderSelectedDay(); }
+  if (target === "history") renderHistory();
+  if (target === "settings") renderSettings();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function openEntry(date = localDateKey(new Date())) {
+  const dialog = $("#entry-dialog");
+  const form = $("#entry-form");
+  const log = state.logs[date];
+  form.reset();
+  form.date.value = date;
+  form.time.value = log?.time || new Date().toTimeString().slice(0, 5);
+  ["temperature", "humidity", "light", "ph", "ec", "notes"].forEach((name) => { form[name].value = log?.[name] ?? ""; });
+  form.exhaustion.checked = Boolean(log?.exhaustion);
+  form.circulation.checked = Boolean(log?.circulation);
+  dialog.showModal();
+}
+
+function saveEntry(form) {
+  const data = new FormData(form);
+  const date = data.get("date");
+  state.logs[date] = {
+    date,
+    time: data.get("time"),
+    temperature: data.get("temperature"),
+    humidity: data.get("humidity"),
+    light: data.get("light"),
+    ph: data.get("ph"),
+    ec: data.get("ec"),
+    exhaustion: data.get("exhaustion") === "on",
+    circulation: data.get("circulation") === "on",
+    notes: data.get("notes").trim(),
+    updatedAt: new Date().toISOString(),
+  };
+  saveState();
+  renderAll();
+  showToast("Registro salvo neste aparelho.");
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `grow-tracker-backup-${localDateKey(new Date())}.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!parsed || typeof parsed !== "object") throw new Error();
+      state = {
+        ...structuredClone(defaultState),
+        ...parsed,
+        settings: { ...defaultState.settings, ...(parsed.settings || {}), targets: { ...defaultState.settings.targets, ...(parsed.settings?.targets || {}) } },
+        logs: parsed.logs || {},
+        checks: parsed.checks || {},
+      };
+      saveState();
+      renderAll();
+      showToast("Backup importado com sucesso.");
+    } catch {
+      showToast("Não foi possível importar esse arquivo.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+function escapeHtml(text) {
+  const node = document.createElement("div");
+  node.textContent = String(text);
+  return node.innerHTML;
+}
+
+let toastTimer;
+function showToast(message) {
+  const toast = $("#toast");
+  toast.textContent = message;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
+}
+
+function renderAll() {
+  renderHeader();
+  renderMetrics();
+  renderChecklist();
+  renderCalendar();
+  renderSelectedDay();
+  renderHistory();
+  renderSettings();
+}
+
+$("#open-entry").addEventListener("click", () => openEntry());
+$$('.nav-item').forEach((button) => button.addEventListener("click", () => switchView(button.dataset.target)));
+$("#prev-month").addEventListener("click", () => { calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() - 1, 1); renderCalendar(); });
+$("#next-month").addEventListener("click", () => { calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + 1, 1); renderCalendar(); });
+
+$("#entry-form").addEventListener("submit", (event) => {
+  if (event.submitter?.value === "cancel") return;
+  event.preventDefault();
+  if (!event.currentTarget.reportValidity()) return;
+  saveEntry(event.currentTarget);
+  $("#entry-dialog").close();
 });
 
-exportBtn.addEventListener("click", ()=>{
-  const blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
-  const a = document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download=`indoor-grow-tracker-${todayISO()}.json`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-});
-importInput.addEventListener("change", async e=>{
-  const f = e.target.files?.[0]; if(!f) return;
-  try{
-    const data = JSON.parse(await f.text());
-    state = {...structuredClone(defaultState), ...data};
-    save(); boot();
-  }catch{ alert("Arquivo JSON inválido."); }
-  e.target.value="";
+$("#entry-dialog").addEventListener("click", (event) => {
+  if (event.target === event.currentTarget) event.currentTarget.close();
 });
 
-themeBtn.addEventListener("click",()=>{
-  state.dark=!state.dark; save();
-  document.body.classList.toggle("dark",state.dark);
+$("#settings-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const data = new FormData(event.currentTarget);
+  state.settings.phase = data.get("phase").trim() || "Não definida";
+  state.settings.startDate = data.get("startDate");
+  state.settings.targets = {
+    tempMin: data.get("tempMin"), tempMax: data.get("tempMax"),
+    humidityMin: data.get("humidityMin"), humidityMax: data.get("humidityMax"),
+  };
+  saveState();
+  renderAll();
+  showToast("Ajustes salvos.");
 });
 
-function fmt(iso){
-  if(!iso) return "—";
-  return new Date(iso+"T12:00:00").toLocaleDateString("pt-BR");
-}
-function num(v){
-  if(v===null || v===undefined || v==="") return null;
-  const n = Number(v); return Number.isFinite(n)?n:null;
-}
-function escapeHtml(s){
-  return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
-}
-function boot(){
-  document.body.classList.toggle("dark",!!state.dark);
-  logDate.value=todayISO();
-  renderPrep(); renderTargets(); renderPhases(); renderToday(); renderHistory(); interpretForm();
-}
-boot();
+$("#export-data").addEventListener("click", exportData);
+$("#import-data").addEventListener("change", (event) => {
+  const [file] = event.target.files;
+  if (file) importData(file);
+  event.target.value = "";
+});
+
+renderAll();
